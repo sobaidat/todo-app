@@ -1,22 +1,20 @@
-# Base off official golang image
-FROM golang:latest
-
-# Create app directory
-RUN mkdir -p /go/src/app
-WORKDIR /go/src/app
-
-# Bundle app source
-COPY src /go/src/app
-
-# Download and install any required third party dependencies into the container.
-RUN go get -d -v ./...
-RUN go install -v ./...
-
-# Set the PORT environment variable inside the container
-ENV PORT 8000
-
-# Expose port 8000 to the host so we can access our application
-EXPOSE 8000
-
-# Now tell Docker what command to run when the container starts
-CMD ["go-wrapper", "run"]
+## We specify the base image we need for our
+## go application
+FROM golang:1.12.0-alpine3.9
+## We create an /app directory within our
+## image that will hold our application source
+## files
+RUN mkdir /app
+## We copy everything in the root directory
+## into our /app directory
+ADD . /app
+## We specify that we now wish to execute 
+## any further commands inside our /app
+## directory
+WORKDIR /app
+## we run go build to compile the binary
+## executable of our Go program
+RUN go build -o todoserver .
+## Our start command which kicks off
+## our newly created binary executable
+CMD ["/app/todoserver"]
