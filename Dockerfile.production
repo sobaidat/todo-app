@@ -1,13 +1,14 @@
-FROM golang:1.15.7-buster
-ENV GO111MODULE=on
-ENV GOFLAGS=-mod=vendor
-ENV APP_USER app
-ENV APP_HOME /go/src/todoapp
-ARG GROUP_ID
-ARG USER_ID
-RUN groupadd --gid $GROUP_ID app && useradd -m -l --uid $USER_ID --gid $GROUP_ID $APP_USER
-RUN mkdir -p $APP_HOME && chown -R $APP_USER:$APP_USER $APP_HOME
-USER $APP_USER
-WORKDIR $APP_HOME
+FROM golang:alpine AS build
+RUN apk --no-cache add gcc g++ make git
+WORKDIR /go/src/app
+COPY . .
+RUN go mod init todoserver
+RUN go mod tidy
+RUN GOOS=linux go build -ldflags="-s -w" -o ./bin/web-app ./todoserver.go
+
+FROM alpine:3.13
+RUN apk --no-cache add ca-certificates
+WORKDIR /usr/bin
+COPY --from=build /go/src/app/bin /go/bin
 EXPOSE 8000
-CMD ["run"]
+ENTRYPOINT /go/bin/web-app --port 8000
