@@ -1,12 +1,22 @@
-FROM golang:alpine AS build
-RUN apk --no-cache add gcc g++ make git
-WORKDIR /go/src/todoapp
-COPY . .
-RUN GOOS=linux go build -ldflags="-s -w" -o ./bin/todo-web-app ./todoserver.go
+# Base off official golang image
+FROM golang:latest
 
-FROM alpine:3.13
-RUN apk --no-cache add ca-certificates
-WORKDIR /usr/bin
-COPY --from=build /go/src/todoapp/bin /go/bin
+# Create app directory
+RUN mkdir -p /go/src/app
+WORKDIR /go/src/app
+
+# Bundle app source
+COPY src /go/src/app
+
+# Download and install any required third party dependencies into the container.
+RUN go get -d -v ./...
+RUN go install -v ./...
+
+# Set the PORT environment variable inside the container
+ENV PORT 8000
+
+# Expose port 8000 to the host so we can access our application
 EXPOSE 8000
-ENTRYPOINT /go/bin/todoapp-web-app --port 8000
+
+# Now tell Docker what command to run when the container starts
+CMD ["go-wrapper", "run"]
